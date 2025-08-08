@@ -2,9 +2,16 @@ import subprocess
 import multiprocessing
 import click
 from pathlib import Path
-from scenedetect import detect, ContentDetector, split_video_ffmpeg
+from scenedetect import (
+    detect, 
+    ContentDetector, 
+    split_video_ffmpeg
+)
 
-def split_video_with_ffmpeg(input_video_path: Path, output_folder: Path) -> list[Path]:
+def split_video_with_ffmpeg(
+    input_video_path: Path, 
+    output_folder: Path
+) -> list[Path]:
     """Splits the input video into three horizontal parts using FFmpeg."""
     output_folder.mkdir(parents=True, exist_ok=True)
     ffprobe_cmd = [
@@ -27,16 +34,30 @@ def split_video_with_ffmpeg(input_video_path: Path, output_folder: Path) -> list
     ]
 
     ffmpeg_commands = [
-        ['ffmpeg', '-y', '-i', str(input_video_path), '-vf', f'crop={third_width}:{height}:0:0', '-c:v', 'h264_videotoolbox', '-q:v', '50', str(split_video_paths[0])],
-        ['ffmpeg', '-y', '-i', str(input_video_path), '-vf', f'crop={third_width}:{height}:{third_width}:0', '-c:v', 'h264_videotoolbox', '-q:v', '50', str(split_video_paths[1])],
-        ['ffmpeg', '-y', '-i', str(input_video_path), '-vf', f'crop={third_width}:{height}:{2 * third_width}:0', '-c:v', 'h264_videotoolbox', '-q:v', '50', str(split_video_paths[2])]
+        ['ffmpeg', '-y', '-i', str(input_video_path), '-vf', f'crop={third_width}:{height}:0:0', 
+         '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', str(split_video_paths[0])],
+        
+        ['ffmpeg', '-y', '-i', str(input_video_path), '-vf', f'crop={third_width}:{height}:{third_width}:0', 
+         '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', str(split_video_paths[1])],
+        
+        ['ffmpeg', '-y', '-i', str(input_video_path), '-vf', f'crop={third_width}:{height}:{2 * third_width}:0', 
+         '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', str(split_video_paths[2])]
     ]
     for cmd in ffmpeg_commands:
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            cmd, 
+            check=True, 
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL
+        )
     click.echo("✅ Video splitting complete.")
     return split_video_paths
 
-def detect_scenes_for_part(video_path: Path, part_num: int, output_folder: Path):
+def detect_scenes_for_part(
+    video_path: Path, 
+    part_num: int, 
+    output_folder: Path
+):
     """Performs scene detection for a single video part."""
     scenes_folder = output_folder / f"part{part_num}_scenes"
     scenes_folder.mkdir(exist_ok=True)
@@ -47,10 +68,13 @@ def detect_scenes_for_part(video_path: Path, part_num: int, output_folder: Path)
     if not scene_list:
         click.echo(f"⚠️  No scenes detected in {video_path.name}.")
         return
-    split_video_ffmpeg(video_path_str, scene_list, output_file_template=output_template, suppress_output=True)
+    split_video_ffmpeg(video_path_str, scene_list, output_file_template=output_template, show_output=True)
     click.echo(f"✅ Finished processing scenes for part {part_num}.")
 
-def consolidate_scenes(output_dir: Path, cleanup: bool):
+def consolidate_scenes(
+    output_dir: Path, 
+    cleanup: bool
+):
     """
     Consolidates all generated scenes into a single folder and optionally cleans up.
     """
@@ -87,29 +111,55 @@ def consolidate_scenes(output_dir: Path, cleanup: bool):
         click.echo("✅ Cleanup complete.")
 
 @click.command()
-@click.option('--input-video', type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, path_type=Path), required=True, help="Path to the horizontally concatenated input video.")
-@click.option('--output-dir', type=click.Path(file_okay=False, path_type=Path), required=True, help="Directory to save the output.")
-@click.option('--cleanup/--no-cleanup', default=True, help="Remove intermediate files (e.g., partX.mp4) after completion.")
-def process_video_cli(input_video: Path, output_dir: Path, cleanup: bool):
-    # """
-    # A tool to split a concatenated video, detect scenes in parallel, and
-    # consolidate the results into a single folder.
-    # """
-    # split_video_paths = split_video_with_ffmpeg(input_video, output_dir)
-    # if not split_video_paths:
-    #     click.echo("Could not split video. Exiting.", err=True)
-    #     return
+@click.option(
+    '--input-video', 
+    type=click.Path(
+        exists=True, 
+        file_okay=True, 
+        dir_okay=False, 
+        readable=True, 
+        path_type=Path
+    ), 
+    required=True, 
+    help="Path to the horizontally concatenated input video."
+)
+@click.option(
+    '--output-dir', 
+    type=click.Path(file_okay=False, path_type=Path), 
+    required=True, 
+    help="Directory to save the output."
+)
+@click.option(
+    '--cleanup/--no-cleanup', 
+    default=True, 
+    help="Remove intermediate files (e.g., partX.mp4) after completion."
+)
+def process_video_cli(
+    input_video: Path, 
+    output_dir: Path, 
+    cleanup: bool
+):
+    """
+    A tool to split a concatenated video, detect scenes in parallel, and
+    consolidate the results into a single folder.
+    """
+    split_video_paths = split_video_with_ffmpeg(input_video, output_dir)
+    if not split_video_paths:
+        click.echo("Could not split video. Exiting.", err=True)
+        return
 
-    # processes = []
-    # for i, video_path in enumerate(split_video_paths):
-    #     process = multiprocessing.Process(target=detect_scenes_for_part, args=(video_path, i + 1, output_dir))
-    #     processes.append(process)
-    #     process.start()
+    processes = []
+    for i, video_path in enumerate(split_video_paths):
+        process = multiprocessing.Process(
+            target=detect_scenes_for_part, 
+            args=(video_path, i + 1, output_dir)
+        )
+        processes.append(process)
+        process.start()
 
-    # for process in processes:
-    #     process.join()
+    for process in processes:
+        process.join()
 
-    # --- NEW STEP: Consolidate all scenes ---
     consolidate_scenes(output_dir, cleanup)
 
     click.echo("\n🎉 All tasks completed successfully!")

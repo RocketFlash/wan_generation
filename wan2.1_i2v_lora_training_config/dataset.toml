@@ -1,0 +1,48 @@
+# =================================================================
+# Dataset Config for Wan2.1 14B I2V (480p) Fine-tuning
+# =================================================================
+
+# --- Resolution & Aspect Ratio Bucketing ---
+# Target a base resolution compatible with the 480p model.
+# Since your videos are mostly portrait (479x608), we will set a base resolution
+# that reflects this. Bucketing will handle the slight variations.
+# The format is [height, width].
+
+resolutions = [
+  [608, 480]
+]
+
+# Enable aspect ratio bucketing. This is essential for your dataset to handle
+# different video dimensions efficiently without excessive cropping or padding.
+enable_ar_bucket = true
+
+# The range of aspect ratios (width / height) to create buckets for.
+# Your main aspect ratio is ~0.78 (479/608). This range covers it well.
+min_ar = 0.7
+max_ar = 0.8
+
+# The number of buckets to divide the aspect ratio range into.
+num_ar_buckets = 2
+
+# --- Frame (Video Length) Bucketing ---
+# This is critical for handling videos with variable lengths (up to 5 seconds).
+# Buckets are based on a 16 FPS frame rate.
+# Max frames = 5 seconds * 16 FPS = 80 frames.
+# We will create buckets for each second of video length.
+frame_buckets = [48, 64, 80]
+
+
+# --- Directory Settings ---
+# This section points to your dataset of videos and text files.
+
+[[directory]]
+# IMPORTANT: Replace this with the actual path to your dataset folder.
+path = "/data/generation_experiments/train_dataset_v2"
+
+# The number of times the dataset is repeated per epoch.
+# For smaller datasets, a value of 10-20 can help the model learn better.
+num_repeats = 1
+
+# (Optional) Uncomment the line below to provide a default caption
+# if a video is missing its corresponding .txt description file.
+default_caption = "The action presented on screen is pov_anal_missionary"

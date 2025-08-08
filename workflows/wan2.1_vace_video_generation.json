@@ -1,0 +1,248 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 643673519682769,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "uni_pc",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": [
+        "48",
+        0
+      ],
+      "positive": [
+        "49",
+        0
+      ],
+      "negative": [
+        "49",
+        1
+      ],
+      "latent_image": [
+        "49",
+        2
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "Blonde woman with big breasts lying on her back. She is crying and moaning from pleasure. The action presented on screen is pov_anal_missionary.",
+      "clip": [
+        "109",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "positive_prompt"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "Overexposure, blurred, subtitles, paintings, poorly drawn hands/faces, deformed limbs, cluttered background ",
+      "clip": [
+        "109",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "negative_prompt"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "58",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "39": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "48": {
+    "inputs": {
+      "shift": 8.000000000000002,
+      "model": [
+        "109",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "49": {
+    "inputs": {
+      "width": 480,
+      "height": 848,
+      "length": 81,
+      "batch_size": 1,
+      "strength": 1,
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ],
+      "reference_image": [
+        "73",
+        0
+      ]
+    },
+    "class_type": "WanVaceToVideo",
+    "_meta": {
+      "title": "WanVaceToVideo"
+    }
+  },
+  "58": {
+    "inputs": {
+      "trim_amount": [
+        "49",
+        3
+      ],
+      "samples": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "TrimVideoLatent",
+    "_meta": {
+      "title": "TrimVideoLatent"
+    }
+  },
+  "73": {
+    "inputs": {
+      "image": "Screenshot 2025-08-07 at 07.16.34.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "load_image"
+    }
+  },
+  "109": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "Wan21_CausVid_14B_T2V_lora_rank32.safetensors",
+        "strength": 0.25
+      },
+      "lora_2": {
+        "on": true,
+        "lora": "pov_anal_missionary.safetensors",
+        "strength": 3
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "125",
+        0
+      ],
+      "clip": [
+        "117",
+        0
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "Power Lora Loader (rgthree)"
+    }
+  },
+  "112": {
+    "inputs": {
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "vace_14b",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "117": {
+    "inputs": {
+      "clip_name": "umt5-xxl-encoder-Q8_0.gguf",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "ClipLoaderGGUF",
+    "_meta": {
+      "title": "GGUF CLIP Loader"
+    }
+  },
+  "125": {
+    "inputs": {
+      "unet_name": "Wan2.1-VACE-14B-Q8_0.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "129": {
+    "inputs": {
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "resolution": 512,
+      "scale_stick_for_xinsr_cn": "disable"
+    },
+    "class_type": "OpenposePreprocessor",
+    "_meta": {
+      "title": "OpenPose Pose"
+    }
+  },
+  "139": {
+    "inputs": {
+      "preview": "[true, [\"/var/lib/mluser/ComfyUI/instance1/output/vace_14b_00018.png\", \"/var/lib/mluser/ComfyUI/instance1/output/vace_14b_00018.mp4\"]]",
+      "source": [
+        "112",
+        0
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "output_paths"
+    }
+  }
+}

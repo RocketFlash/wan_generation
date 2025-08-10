@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# The name for your Docker image
 IMAGE_NAME="comfy-i2v-service"
 
 echo "--- Building Docker image: $IMAGE_NAME ---"

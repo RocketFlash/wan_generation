@@ -8,14 +8,13 @@ import argparse
 import base64
 import requests
 import time
-import random # Import the random library
+import random
 
 from fastapi import FastAPI, Form, File, UploadFile
 from fastapi.responses import JSONResponse
 import uvicorn
 from typing import Optional, Union, Dict, Any
 
-# --- Global Variables ---
 server_address = "127.0.0.1:8188"
 client_id = str(uuid.uuid4())
 workflow_api_json = {}
@@ -23,7 +22,11 @@ VERBOSE = False
 
 # --- ComfyUI Interaction Logic ---
 
-def find_node_id(workflow: Dict[str, Any], node_title: Optional[str] = None, node_type: Optional[str] = None) -> Optional[str]:
+def find_node_id(
+    workflow: Dict[str, Any], 
+    node_title: Optional[str] = None, 
+    node_type: Optional[str] = None
+) -> Optional[str]:
     """Finds a node's ID by its title or class_type."""
     for node_id, node_data in workflow.items():
         if isinstance(node_data, dict):
@@ -33,8 +36,9 @@ def find_node_id(workflow: Dict[str, Any], node_title: Optional[str] = None, nod
                 return node_id
     return None
 
-def queue_prompt(prompt_workflow: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    # ... (function is unchanged)
+def queue_prompt(
+    prompt_workflow: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
     try:
         p = {"prompt": prompt_workflow, "client_id": client_id}
         data = json.dumps(p).encode('utf-8')
@@ -45,8 +49,9 @@ def queue_prompt(prompt_workflow: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         print(f"Error queuing prompt: {e}")
         return None
 
-def get_history(prompt_id: str) -> Dict[str, Any]:
-    # ... (function is unchanged)
+def get_history(
+    prompt_id: str
+) -> Dict[str, Any]:
     try:
         with urllib.request.urlopen(f"http://{server_address}/history/{prompt_id}") as response:
             return json.loads(response.read())
@@ -54,8 +59,9 @@ def get_history(prompt_id: str) -> Dict[str, Any]:
         print(f"Error fetching history: {e}")
         return {}
 
-def parse_video_path_from_output(outputs: Dict[str, Any]) -> Optional[str]:
-    # ... (function is unchanged)
+def parse_video_path_from_output(
+    outputs: Dict[str, Any]
+) -> Optional[str]:
     if "text" not in outputs or not isinstance(outputs["text"], list) or not outputs["text"]:
         return None
     stringified_list = outputs["text"][0]
@@ -71,8 +77,10 @@ def parse_video_path_from_output(outputs: Dict[str, Any]) -> Optional[str]:
         return None
     return None
 
-def get_final_video_path(prompt_id: str, target_node_id: str) -> Optional[str]:
-    # ... (function is unchanged)
+def get_final_video_path(
+    prompt_id: str, 
+    target_node_id: str
+) -> Optional[str]:
     ws = websocket.WebSocket()
     try:
         if VERBOSE: print("Connecting to WebSocket to monitor target node...")
@@ -100,8 +108,9 @@ def get_final_video_path(prompt_id: str, target_node_id: str) -> Optional[str]:
         return parse_video_path_from_output(history['outputs'][target_node_id])
     return None
 
-def upload_image(image_data: Union[UploadFile, str]) -> str:
-    # ... (function is unchanged)
+def upload_image(
+    image_data: Union[UploadFile, str]
+) -> str:
     if isinstance(image_data, str):
         img_bytes = base64.b64decode(image_data)
         files = {'image': ("image.png", img_bytes, 'image/png')}
@@ -112,7 +121,6 @@ def upload_image(image_data: Union[UploadFile, str]) -> str:
     response.raise_for_status()
     return response.json()['name']
 
-# --- FastAPI Application ---
 app = FastAPI()
 
 @app.post("/generate-video")
@@ -131,7 +139,6 @@ async def generate_video(
         k_sampler_node_id = find_node_id(prompt_workflow, node_type="KSampler") # Find the KSampler
 
         if not all([image_node_id, pos_prompt_node_id, neg_prompt_node_id, output_node_id]):
-            # ... (error handling remains the same)
             missing = [title for title, node_id in [("load_image", image_node_id), ("positive_prompt", pos_prompt_node_id), ("negative_prompt", neg_prompt_node_id), ("output_paths", output_node_id)] if not node_id]
             return JSONResponse(status_code=404, content={"error": f"Could not find required nodes. Missing titles: {', '.join(missing)}"})
 
@@ -141,9 +148,7 @@ async def generate_video(
         prompt_workflow[pos_prompt_node_id]["inputs"]["text"] = prompt
         prompt_workflow[neg_prompt_node_id]["inputs"]["text"] = negative_prompt
 
-        # --- THIS IS THE NEW, CRITICAL PART ---
         if k_sampler_node_id:
-            # Generate a new random seed to ensure the workflow runs fresh every time
             random_seed = random.randint(0, 999999999999999)
             prompt_workflow[k_sampler_node_id]["inputs"]["seed"] = random_seed
             if VERBOSE:
@@ -151,7 +156,6 @@ async def generate_video(
         else:
             if VERBOSE:
                 print("Warning: KSampler node not found. Seed will not be randomized, which may cause caching issues.")
-        # ------------------------------------
 
         # Queue the prompt and get the result
         queued_item = queue_prompt(prompt_workflow)
@@ -176,7 +180,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="A robust FastAPI wrapper for ComfyUI video generation.")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the FastAPI server to.")
-    parser.add_argument("--port", type=int, default=8000, help="Port to run the FastAPI server on.")
+    parser.add_argument("--port", type=int, default=5528, help="Port to run the FastAPI server on.")
     parser.add_argument("--comfyui-url", type=str, default="127.0.0.1:8188", help="The URL of the ComfyUI server.")
     parser.add_argument("--workflow", type=str, required=True, help="Path to the ComfyUI API Format workflow JSON file.")
     parser.add_argument("--verbose", action="store_true", help="Enable detailed verbose logging for debugging.")

@@ -1,5 +1,7 @@
 # media
 output/*
+diffusion-pipe/
+models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

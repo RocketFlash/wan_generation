@@ -1,33 +1,64 @@
+# =================================================================
+# Training Config for Wan2.1 14B I2V (480p) Fine-tuning
+# =================================================================
+# We need to set save directory and path to out dataset.toml file
 output_dir = '/data/diffusion_pipe_training_runs/tmp'
 dataset = '/home/mluser/workdir/video_generation/wan2.1_i2v_lora_training_config/dataset.toml'
 
-# training settings
+# --- Training settings ---
+# number of training epochs
 epochs = 50
+# real batch size per step per gpu
 micro_batch_size_per_gpu = 2
+# number of parallel pipelines. In my case I have 3xL40 gpus but with pipeline_stages=1 I got OOM
+# even with micro_batch_size_per_gpu=1.
+# I decided to set it to 1, but use larger batch size and it worked.
 pipeline_stages = 1
+# Number of steps before gradient update. It makes effective batch size larger.
+# In my case it's 3 (gpus) x 2 (micro_batch_size_per_gpu) x 4 (gradient_accumulation_steps) = 24
+# I only needed 5 steps per epoch
 gradient_accumulation_steps = 4
+# clip gradients to prevent exploiding
 gradient_clipping = 1
+# number of steps with low learning rate before main training
 warmup_steps = 10
 
-# eval settings
+# --- Evaluation settings ---
+# as we don't have evaluation dataset, so here I just added default values
 eval_every_n_epochs = 1
 eval_before_first_step = true
 eval_micro_batch_size_per_gpu = 1
 eval_gradient_accumulation_steps = 1
 
-# misc settings
+# --- Misc settings ---
+# save checkpoints parameters
 save_every_n_epochs = 2
 checkpoint_every_n_minutes = 60
+# as we don't have much VRAM we will use activation_checkpointing
 activation_checkpointing = 'unsloth'
+# controls how Deepspeed decides how to divide layers across GPUs.
 partition_method = 'parameters'
+# dtype for saving the LoRA or model, if different from training dtype
 save_dtype = 'bfloat16'
+# batch size for caching latents and text embeddings. In my case I got OOM with higher values than 8
 caching_batch_size = 8
+# number of parallel processes to use in map() calls when caching the dataset.
 map_num_proc = 22
+# how often deepspeed logs to console.
 steps_per_print = 1
+# How to extract video clips for training from a single input video file.
+# The video file is first assigned to one of the configured frame buckets, but then we must extract one or more clips of exactly the right
+# number of frames for that bucket.
+# single_beginning: one clip starting at the beginning of the video
+# single_middle: one clip from the middle of the video (cutting off the start and end equally)
+# multiple_overlapping: extract the minimum number of clips to cover the full range of the video. They might overlap some.
+# default is single_beginning
 video_clip_mode = "single_middle"
+# number of blocks to swap between RAM and VRAM. It reduces training speed, but helps to save VRAM
 blocks_to_swap = 32
 
 [model]
+# my base model
 type = 'wan'
 ckpt_path = '/data/generation_experiments/models/Wan2.1-I2V-14B-480P'
 dtype = 'bfloat16'
@@ -35,12 +66,16 @@ transformer_dtype = 'float8'
 timestep_sample_method = 'logit_normal'
 
 [adapter]
+# I trained LoRA with r=32
 type = 'lora'
 rank = 32
 dtype = 'bfloat16'
 
 [optimizer]
+# I use this optimizer for a bit less memory usage.
 type = 'AdamW8bitKahan'
+# baseline for LoRA training is 1e-5, but my effective batch is large, so I decided to make it bigger
+# but nut hadn't used linear scaling rule
 lr = 5e-5
 betas = [0.9, 0.99]
 weight_decay = 0.01
@@ -48,7 +83,8 @@ stabilize = false
 
 
 [monitoring]
-enable_wandb = true
-wandb_api_key = ''
-wandb_tracker_name = 'wan2.1_i2v_14b_480p_lora_training'
-wandb_run_name = ''
+# I used wandb to track training
+# enable_wandb = true
+# wandb_api_key = ''
+# wandb_tracker_name = 'wan2.1_i2v_14b_480p_lora_training'
+# wandb_run_name = ''

@@ -27,7 +27,6 @@ def process_video(
         output_pattern = output_dir / f"{video_path.stem}-chunk-%03d.mp4"
         vf_filter = f"scale=w={width}:h={height}:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2"
 
-        # --- CHANGE: Keyframe expression is now dynamic based on chunk_length ---
         keyframe_expr = f'expr:gte(t,n_forced*{chunk_length})'
 
         ffmpeg_cmd = [
@@ -45,12 +44,9 @@ def process_video(
             '-c:a', 'aac',
             '-b:a', '128k',
 
-            # --- Segmentation Settings ---
             '-f', 'segment',
             '-segment_time', str(chunk_length),  # Use the parameter here
             '-reset_timestamps', '1',
-            
-            # --- CHANGE: This is the critical fix for precise chunk length ---
             '-force_key_frames', keyframe_expr, # Force keyframes at exact cut points
             
             str(output_pattern)
@@ -80,10 +76,27 @@ def process_video(
     required=True,
     help="The BASE directory where the output folder will be created."
 )
-@click.option('--width', type=int, default=480, show_default=True, help="Target width for resizing.")
-@click.option('--height', type=int, default=832, show_default=True, help="Target height for resizing.")
-@click.option('--fps', type=int, default=16, show_default=True, help="Target frames per second.")
-# --- CHANGE: Added chunk_length option ---
+@click.option(
+    '--width', 
+    type=int, 
+    default=480, 
+    show_default=True, 
+    help="Target width for resizing."
+)
+@click.option(
+    '--height', 
+    type=int, 
+    default=832, 
+    show_default=True, 
+    help="Target height for resizing."
+)
+@click.option(
+    '--fps', 
+    type=int, 
+    default=16, 
+    show_default=True, 
+    help="Target frames per second."
+)
 @click.option(
     '--chunk-length', '-l',
     type=int,
@@ -102,7 +115,6 @@ def batch_process_cli(
     """
     A tool to batch process videos with custom resolution, FPS, and precise chunk length.
     """
-    # --- CHANGE: Directory name now includes chunk length ---
     final_output_dir = output_dir / f"clips_{width}x{height}_{fps}fps_{chunk_length}s"
     final_output_dir.mkdir(parents=True, exist_ok=True)
     click.echo(f"Output will be saved in: {final_output_dir}")
@@ -114,7 +126,6 @@ def batch_process_cli(
 
     click.echo(f"Found {len(video_files)} videos to process. Starting...")
 
-    # --- CHANGE: Pass chunk_length to the processing tasks ---
     tasks = [(video_path, final_output_dir, width, height, fps, chunk_length) for video_path in video_files]
 
     with multiprocessing.Pool() as pool:
@@ -122,7 +133,7 @@ def batch_process_cli(
             for _ in pool.starmap(process_video, tasks):
                 pbar.update()
 
-    click.echo("\n🎉 Batch processing complete!")
+    click.echo("\nBatch processing complete!")
     click.echo(f"All processed videos are saved in: {final_output_dir}")
 
 if __name__ == '__main__':

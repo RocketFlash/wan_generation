@@ -64,11 +64,9 @@ def create_dataset_cli(
     output_dir.mkdir(parents=True, exist_ok=True)
     click.echo(f"Searching for video chunks in: {input_dir}")
 
-    # --- MODIFICATION: Set effective min/max to avoid None checks later ---
     min_len = min_len_threshold if min_len_threshold is not None else 0.0
     max_len = max_len_threshold if max_len_threshold is not None else sys.float_info.max
 
-    # --- MODIFICATION: Step 1 - Analyze ALL videos first to get their lengths ---
     all_video_files = list(input_dir.glob("*.mp4"))
     if not all_video_files:
         click.echo(f"No .mp4 files found in '{input_dir}'.", err=True)
@@ -140,7 +138,6 @@ def create_dataset_cli(
         click.echo("No files were selected. Exiting.")
         return
 
-    # --- MODIFICATION: Step 4 - Copy files and gather stats simultaneously ---
     video_lengths = []
     selected_file_paths = [info['path'] for info in selected_videos_info]
     video_lengths = [info['duration'] for info in selected_videos_info] # Already calculated
